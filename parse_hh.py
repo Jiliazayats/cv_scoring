@@ -1,5 +1,5 @@
 import requests
-from bs4 import BeautifulSoup
+
 
 def get_html(url: str):
     return requests.get(
@@ -9,41 +9,48 @@ def get_html(url: str):
         },
     )
 
+
+# print(response.text)
+# with open("vacancy.html", "w") as f:
+#     f.write(response.text)
+
+from bs4 import BeautifulSoup
+
+
 def extract_vacancy_data(html):
     soup = BeautifulSoup(html, "html.parser")
 
     # Извлечение заголовка вакансии
-    title_tag = soup.find("h1", {"data-qa": "vacancy-title"})
-    title = title_tag.text.strip() if title_tag else "Не указано"
+    title = soup.find("h1", {"data-qa": "vacancy-title"}).text.strip()
 
     # Извлечение зарплаты
-    salary_tag = soup.find("span", {"data-qa": "vacancy-salary-compensation-type-net"})
-    salary = salary_tag.text.strip() if salary_tag else "Не указано"
+    salary = soup.find(
+        "span", {"data-qa": "vacancy-salary-compensation-type-net"}
+    ).text.strip()
 
     # Извлечение опыта работы
-    experience_tag = soup.find("span", {"data-qa": "vacancy-experience"})
-    experience = experience_tag.text.strip() if experience_tag else "Не указано"
+    experience = soup.find("span", {"data-qa": "vacancy-experience"}).text.strip()
 
     # Извлечение типа занятости и режима работы
-    employment_mode_tag = soup.find("p", {"data-qa": "vacancy-view-employment-mode"})
-    employment_mode = employment_mode_tag.text.strip() if employment_mode_tag else "Не указано"
+    employment_mode = soup.find(
+        "p", {"data-qa": "vacancy-view-employment-mode"}
+    ).text.strip()
 
     # Извлечение компании
-    company_tag = soup.find("a", {"data-qa": "vacancy-company-name"})
-    company = company_tag.text.strip() if company_tag else "Не указано"
+    company = soup.find("a", {"data-qa": "vacancy-company-name"}).text.strip()
 
     # Извлечение местоположения
-    location_tag = soup.find("p", {"data-qa": "vacancy-view-location"})
-    location = location_tag.text.strip() if location_tag else "Не указано"
+    location = soup.find("p", {"data-qa": "vacancy-view-location"}).text.strip()
 
     # Извлечение описания вакансии
-    description_tag = soup.find("div", {"data-qa": "vacancy-description"})
-    description = description_tag.text.strip() if description_tag else "Не указано"
+    description = soup.find("div", {"data-qa": "vacancy-description"}).text.strip()
 
     # Извлечение ключевых навыков
     skills = [
         skill.text.strip()
-        for skill in soup.find_all("div", class_="magritte-tag__label___YHV-o_3-0-13")
+        for skill in soup.find_all(
+            "div", {"class": "magritte-tag__label___YHV-o_3-0-3"}
+        )
     ]
 
     # Формирование строки в формате Markdown
@@ -60,57 +67,41 @@ def extract_vacancy_data(html):
 {description}
 
 ## Ключевые навыки
-- {'\n- '.join(skills) if skills else 'Не указаны'}
+- {'\n- '.join(skills)}
 """
 
     return markdown.strip()
+
+
+# from bs4 import BeautifulSoup
 
 def extract_candidate_data(html):
     soup = BeautifulSoup(html, 'html.parser')
 
     # Извлечение основных данных кандидата
-    name_tag = soup.find('h2', {'data-qa': 'bloko-header-1'})
-    name = name_tag.text.strip() if name_tag else "Не указано"
-
-    gender_age_tag = soup.find('p')
-    gender_age = gender_age_tag.text.strip() if gender_age_tag else "Не указано"
-
-    location_tag = soup.find('span', {'data-qa': 'resume-personal-address'})
-    location = location_tag.text.strip() if location_tag else "Не указано"
-
-    job_title_tag = soup.find('span', {'data-qa': 'resume-block-title-position'})
-    job_title = job_title_tag.text.strip() if job_title_tag else "Не указано"
-
-    job_status_tag = soup.find('span', {'data-qa': 'job-search-status'})
-    job_status = job_status_tag.text.strip() if job_status_tag else "Не указано"
+    name = soup.find('h2', {'data-qa': 'bloko-header-1'}).text.strip()
+    gender_age = soup.find('p').text.strip()
+    location = soup.find('span', {'data-qa': 'resume-personal-address'}).text.strip()
+    job_title = soup.find('span', {'data-qa': 'resume-block-title-position'}).text.strip()
+    job_status = soup.find('span', {'data-qa': 'job-search-status'}).text.strip()
 
     # Извлечение опыта работы
     experience_section = soup.find('div', {'data-qa': 'resume-block-experience'})
-    experience_items = experience_section.find_all('div', class_='resume-block-item-gap') if experience_section else []
+    experience_items = experience_section.find_all('div', class_='resume-block-item-gap')
     experiences = []
     for item in experience_items:
-        period_tag = item.find('div', class_='bloko-column_s-2')
-        period = period_tag.text.strip() if period_tag else "Не указано"
+        period = item.find('div', class_='bloko-column_s-2').text.strip()
+        duration = item.find('div', class_='bloko-text').text.strip()
+        period = period.replace(duration, f" ({duration})")
 
-        duration_tag = item.find('div', class_='bloko-text')
-        duration = duration_tag.text.strip() if duration_tag else ""
-        if duration:
-            period = period.replace(duration, f" ({duration})")
-
-        company_tag = item.find('div', class_='bloko-text_strong')
-        company = company_tag.text.strip() if company_tag else "Не указано"
-
-        position_tag = item.find('div', {'data-qa': 'resume-block-experience-position'})
-        position = position_tag.text.strip() if position_tag else "Не указано"
-
-        description_tag = item.find('div', {'data-qa': 'resume-block-experience-description'})
-        description = description_tag.text.strip() if description_tag else "Не указано"
-
+        company = item.find('div', class_='bloko-text_strong').text.strip()
+        position = item.find('div', {'data-qa': 'resume-block-experience-position'}).text.strip()
+        description = item.find('div', {'data-qa': 'resume-block-experience-description'}).text.strip()
         experiences.append(f"**{period}**\n\n*{company}*\n\n**{position}**\n\n{description}\n")
 
     # Извлечение ключевых навыков
     skills_section = soup.find('div', {'data-qa': 'skills-table'})
-    skills = [skill.text.strip() for skill in skills_section.find_all('span', {'data-qa': 'bloko-tag__text'})] if skills_section else []
+    skills = [skill.text.strip() for skill in skills_section.find_all('span', {'data-qa': 'bloko-tag__text'})]
 
     # Формирование строки в формате Markdown
     markdown = f"# {name}\n\n"
@@ -122,7 +113,7 @@ def extract_candidate_data(html):
     for exp in experiences:
         markdown += exp + "\n"
     markdown += "## Ключевые навыки\n\n"
-    markdown += ', '.join(skills) if skills else "Не указаны"
+    markdown += ', '.join(skills) + "\n"
 
     return markdown
 
